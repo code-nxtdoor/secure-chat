@@ -1,38 +1,34 @@
 
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.GCMParameterSpec;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.security.Key;
-import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 public class MessageEncryption {
     private String messageString;
 
     public MessageEncryption(String message, Key key,String type) throws Exception{
         byte[] plainText = message.getBytes(StandardCharsets.UTF_8);
-        Cipher cipher = Cipher.getInstance(type+"/ECB/PKCS5Padding");
-        // encrypt using the key and the plaintext
+        byte[] iv = new byte[12];
+        new SecureRandom().nextBytes(iv);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         System.out.println("\nStart encryption:");
 
         final long startTime = System.nanoTime();
         //  Initializes the Cipher object
-        cipher.init(Cipher.ENCRYPT_MODE, key);
+        cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(128, iv));
 
         // Calculates the ciphertext with a plaintext string.
         byte[] cipherText = cipher.doFinal(plainText);
-        String str2="";
-
-        for (byte b:cipherText) {
-            str2 +=(char)b;
-        }
-        this.messageString = str2;
+        byte[] envelope = new byte[iv.length + cipherText.length];
+        System.arraycopy(iv, 0, envelope, 0, iv.length);
+        System.arraycopy(cipherText, 0, envelope, iv.length, cipherText.length);
+        this.messageString = new String(envelope, StandardCharsets.ISO_8859_1);
         final long duration = System.nanoTime() - startTime;
         System.out.println("Finish encryption: ");
-        System.out.println("It took " + duration + " nanosecond to encrypt the message \"" + message +"\" using "+type);
+        System.out.println("It took " + duration + " nanosecond to encrypt the message using AES-GCM");
         Launcher.takenTimeE=duration;
         System.out.println("Message length is " + message.length());
         if(type.equals("AES"))

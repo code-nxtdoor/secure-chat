@@ -14,12 +14,12 @@ public class Server {
     private static PublicKey serverPublicKey,clientPublicKey;
     private static ObjectInputStream ois,fileois;
     private static ObjectOutputStream oos,fileoos;
-    private static Key AESKey,DESKey;
+    private static Key AESKey,secondaryAESKey;
     
     static void generateRSAKeyPair() throws NoSuchAlgorithmException{
          System.out.println("\nStart generating RSA key");
             KeyPairGenerator keyGenRSA = KeyPairGenerator.getInstance("RSA");
-            keyGenRSA.initialize(1024);
+            keyGenRSA.initialize(2048);
             KeyPair keyRSA = keyGenRSA.generateKeyPair();
              serverPrivateKey = keyRSA.getPrivate();
             serverPublicKey = keyRSA.getPublic();
@@ -30,10 +30,10 @@ public class Server {
     static void generateAndShareAESKey() throws Exception{
         System.out.println("\nStart generating AES key");
             KeyGenerator keyGenAES = KeyGenerator.getInstance("AES");
-            keyGenAES.init(128);    //In AES cipher block size is 128 bits
+            keyGenAES.init(256);
             SecretKey key = keyGenAES.generateKey();
             AESKey = key;
-            System.out.println("Finish generating AES key" + key);
+            System.out.println("Finish generating AES key");
             
             EncryptRSAwithSignature encryptRSAwithSignature = new EncryptRSAwithSignature(key.getEncoded(), clientPublicKey, serverPrivateKey);
             AESkeyAndSignature aeSkeyAndSignature = new AESkeyAndSignature(encryptRSAwithSignature.getCipherKey(), encryptRSAwithSignature.getSignature());
@@ -42,20 +42,19 @@ public class Server {
             oos.flush();
             System.out.println("Common key (AES) has been sent to client");
     }
-    static void generateAndShareDESKey() throws Exception{
-        System.out.println("\nStart generating DES key");
-            KeyGenerator keyGenDES = KeyGenerator.getInstance("DES");
-            keyGenDES.init(56);    //In DES cipher block size is 56 bits
-            SecretKey key = keyGenDES.generateKey();
-            DESKey = key;
-            System.out.println("Finish generating DES key" + key);
+    static void generateAndShareSecondaryAESKey() throws Exception{
+        System.out.println("\nStart generating secondary AES-GCM key");
+            KeyGenerator keyGenAES = KeyGenerator.getInstance("AES");
+            keyGenAES.init(256);
+            SecretKey key = keyGenAES.generateKey();
+            secondaryAESKey = key;
+            System.out.println("Finish generating secondary AES-GCM key");
             
             EncryptRSAwithSignature encryptRSAwithSignature = new EncryptRSAwithSignature(key.getEncoded(), clientPublicKey, serverPrivateKey);
-            DESKeyAndSignature deSkeyAndSignature = new DESKeyAndSignature(encryptRSAwithSignature.getCipherKey(), encryptRSAwithSignature.getSignature());
-            // Now send the DES common key
-            oos.writeObject(deSkeyAndSignature);
+            AESkeyAndSignature secondaryKeyAndSignature = new AESkeyAndSignature(encryptRSAwithSignature.getCipherKey(), encryptRSAwithSignature.getSignature());
+            oos.writeObject(secondaryKeyAndSignature);
             oos.flush();
-            System.out.println("Common key (DES) has been sent to client");
+            System.out.println("Secondary AES-GCM key has been sent to client");
     }
     public static void main(String[] args) throws Exception{
         ServerSocket fileSendServerSocket  = new ServerSocket(5555);
@@ -84,7 +83,7 @@ public class Server {
         oos.flush();
         System.out.println("Public key (RSA) of server has been sent to client");
         generateAndShareAESKey();
-        generateAndShareDESKey();
-        new Launcher(readSocket,writeSocket,AESKey,DESKey,ois,oos,fileSendSocket).setVisible(true);
+        generateAndShareSecondaryAESKey();
+        new Launcher(readSocket,writeSocket,AESKey,secondaryAESKey,ois,oos,fileSendSocket).setVisible(true);
     }
 }

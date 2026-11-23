@@ -10,7 +10,7 @@ public class Client {
     
     private static ObjectOutputStream oos,fileoos;
     private static ObjectInputStream ois,fileois;
-    private static Key AESKey,DESKey;
+    private static Key AESKey,secondaryAESKey;
     private static PublicKey publicKeyServer;
     private static PrivateKey clientPrivateKey;
 
@@ -29,7 +29,7 @@ public class Client {
         
         System.out.println("\nStart generating RSA key");
          KeyPairGenerator keyGenRSA = KeyPairGenerator.getInstance("RSA");
-         keyGenRSA.initialize(1024);
+         keyGenRSA.initialize(2048);
          KeyPair keyRSA = keyGenRSA.generateKeyPair();
          clientPrivateKey = keyRSA.getPrivate();
          PublicKey clientPublicKey = keyRSA.getPublic();
@@ -48,16 +48,15 @@ public class Client {
                 AESKey = decryptRSAwithSignature.getKey();
                 System.out.println("Common key(AES) from server received" + AESKey);
                 
-                 DESKeyAndSignature deSkeyAndSignature = (DESKeyAndSignature) ois.readObject();
-                //MessageDecryptionRSA decryptedAESkey = new MessageDecryptionRSA(aeSkeyAndSignature.getCipherKeyAES(), keyRSAPrivate);
-                DecryptRSAwithSignature decryptRSAwithSignature1 = new DecryptRSAwithSignature(deSkeyAndSignature.getCipherKeyDES(), clientPrivateKey, serverPublicKey, deSkeyAndSignature.getSignature(),"DES");
-                DESKey = decryptRSAwithSignature1.getKey();
-                System.out.println("Common key(DES) from server received" + DESKey);
+                 AESkeyAndSignature secondaryKeyAndSignature = (AESkeyAndSignature) ois.readObject();
+                DecryptRSAwithSignature decryptRSAwithSignature1 = new DecryptRSAwithSignature(secondaryKeyAndSignature.getCipherKeyAES(), clientPrivateKey, serverPublicKey, secondaryKeyAndSignature.getSignature(),"AES");
+                secondaryAESKey = decryptRSAwithSignature1.getKey();
+                System.out.println("Secondary AES-GCM key received");
             } catch (Exception e) {
                 e.printStackTrace();
             }
         
-        new Launcher(readSocket,writeSocket,AESKey,DESKey,ois,oos,fileSendSocket).setVisible(true);
+        new Launcher(readSocket,writeSocket,AESKey,secondaryAESKey,ois,oos,fileSendSocket).setVisible(true);
             System.out.println("Hello");
     }
 }

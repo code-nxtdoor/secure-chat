@@ -34,18 +34,18 @@ public class Launcher extends javax.swing.JFrame {
     private static Socket socket;
     public final static String UPDATE_USERS = "updateuserslist:";
     public static String sessionUsername = null;
-    private Key AESKey,DESKey;
+    private Key AESKey,secondaryAESKey;
     static int val=1;
      File file;
      String fileName1="C:\\Users\\hp\\Desktop\\plain.txt";
-    public Launcher(Socket readSocket,Socket writeSocket,final Key AESKey,final Key DESKey,final ObjectInputStream  ois,ObjectOutputStream oos,Socket fileSendSocket) throws Exception {
+    public Launcher(Socket readSocket,Socket writeSocket,final Key AESKey,final Key secondaryAESKey,final ObjectInputStream  ois,ObjectOutputStream oos,Socket fileSendSocket) throws Exception {
         
         initComponents();
         
         this.readSocket = readSocket;
         this.writeSocket = writeSocket;
         this.AESKey = AESKey;
-        this.DESKey = DESKey;
+        this.secondaryAESKey = secondaryAESKey;
          fileoos = new ObjectOutputStream(fileSendSocket.getOutputStream());
         fileois = new ObjectInputStream(fileSendSocket.getInputStream());
         
@@ -68,7 +68,7 @@ public class Launcher extends javax.swing.JFrame {
                               //  consoleTextArea.append("Decryption Time(AES): "+takenTimeD+"\n");
                             }
                         }else{
-                            mess = new MessageDecryption(encryptedMessage.getMessage(),DESKey,type);
+                            mess = new MessageDecryption(encryptedMessage.getMessage(),secondaryAESKey,type);
                            // consoleTextArea.append("Decryption Time(DES): "+takenTimeD+"\n");
                         }
                         String plainMessageString = mess.getMessage();
@@ -102,7 +102,7 @@ public class Launcher extends javax.swing.JFrame {
                                 consoleTextArea.append("Decryption Time(AES): "+takenTimeD+"\n");
                             }
                         }else{
-                            mess = new MessageDecryption(encryptedMessage.getMessage(),DESKey,type);
+                            mess = new MessageDecryption(encryptedMessage.getMessage(),secondaryAESKey,type);
                             consoleTextArea.append("Decryption Time(DES): "+takenTimeD+"\n");
                         }
                         String plainMessageString = mess.getMessage();
@@ -182,7 +182,7 @@ public class Launcher extends javax.swing.JFrame {
         sendDESBtn.setBackground(new java.awt.Color(40, 116, 240));
         sendDESBtn.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         sendDESBtn.setForeground(new java.awt.Color(255, 255, 0));
-        sendDESBtn.setText("Send (DES)");
+        sendDESBtn.setText("Send (AES-GCM 2)");
         sendDESBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 sendDESBtnActionPerformed(evt);
@@ -192,7 +192,7 @@ public class Launcher extends javax.swing.JFrame {
         sendAESBtn.setBackground(new java.awt.Color(40, 116, 240));
         sendAESBtn.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         sendAESBtn.setForeground(new java.awt.Color(255, 255, 0));
-        sendAESBtn.setText("Send (AES)");
+        sendAESBtn.setText("Send (AES-GCM)");
         sendAESBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 sendAESBtnActionPerformed(evt);
@@ -202,7 +202,7 @@ public class Launcher extends javax.swing.JFrame {
         sendFileDESBtn.setBackground(new java.awt.Color(40, 116, 240));
         sendFileDESBtn.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         sendFileDESBtn.setForeground(new java.awt.Color(255, 255, 0));
-        sendFileDESBtn.setText("Send File (DES)");
+        sendFileDESBtn.setText("Send File (AES-GCM 2)");
         sendFileDESBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 sendFileDESBtnActionPerformed(evt);
@@ -212,7 +212,7 @@ public class Launcher extends javax.swing.JFrame {
         sendFileAESBtn.setBackground(new java.awt.Color(40, 116, 240));
         sendFileAESBtn.setFont(new java.awt.Font("Tahoma", 1, 13)); // NOI18N
         sendFileAESBtn.setForeground(new java.awt.Color(255, 255, 0));
-        sendFileAESBtn.setText("Send File (AES)");
+        sendFileAESBtn.setText("Send File (AES-GCM)");
         sendFileAESBtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 sendFileAESBtnActionPerformed(evt);
@@ -392,9 +392,9 @@ public class Launcher extends javax.swing.JFrame {
                 while((msgStr=br.readLine())!=null)
                 {
 
-                    MessageEncryption messEncryption = new MessageEncryption(msgStr,DESKey,"DES");
+                    MessageEncryption messEncryption = new MessageEncryption(msgStr,secondaryAESKey,"AES-SECONDARY");
                     String encryptedMsgStr = messEncryption.getMessageString();
-                    Message encryptedMsg = new Message(encryptedMsgStr,"DES"); 
+                    Message encryptedMsg = new Message(encryptedMsgStr,"AES-SECONDARY"); 
                     timeDES += takenTimeE;
                     //chatBoxTextArea.append(msgStr+" \n");
                     fileoos.writeObject(encryptedMsg);
@@ -402,7 +402,7 @@ public class Launcher extends javax.swing.JFrame {
                     //Launcher.flag=1;
                
                 }
-                consoleTextArea.append("Encryption time File(DES): "+timeDES);
+                consoleTextArea.append("Encryption time File(AES-GCM 2): "+timeDES);
                /// timeTakenFile = 12354+timeDES;
                  chatBoxTextArea.append("   Me: "+ fileName+"has been sent\n");
             } catch (Exception ex) {
@@ -450,11 +450,11 @@ public class Launcher extends javax.swing.JFrame {
             String msgStr = msgTextField.getText();
             msgTextField.setText("");
             chatBoxTextArea.append("    Me: "+msgStr+"\n");
-            MessageEncryption messEncryption = new MessageEncryption(msgStr,DESKey,"DES");
+            MessageEncryption messEncryption = new MessageEncryption(msgStr,secondaryAESKey,"AES-SECONDARY");
             String encryptedMsgStr = messEncryption.getMessageString();
-            Message encryptedMsg = new Message(encryptedMsgStr,"DES");
-             consoleTextArea.append("Encryption Time(DES): "+takenTimeE+"\n");
-             consoleTextArea.append("Encrypted Msg(DES): "+encryptedMsgStr+"\n");
+            Message encryptedMsg = new Message(encryptedMsgStr,"AES-SECONDARY");
+             consoleTextArea.append("Encryption Time(AES-GCM 2): "+takenTimeE+"\n");
+             consoleTextArea.append("Encrypted Msg(AES-GCM 2): "+encryptedMsgStr+"\n");
             oos.writeObject(encryptedMsg);
             
            // oos.writeInt(0);

@@ -2,7 +2,10 @@ package sample.Decryption;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PSource;
 import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
 
 public class  DecryptRSAwithSignature {
     private SecretKey key;
@@ -12,7 +15,7 @@ public class  DecryptRSAwithSignature {
         System.out.println("\nStart signature verification");
         Signature sig2 = null;
         try {
-            sig2 = Signature.getInstance("MD5WithRSA");
+            sig2 = Signature.getInstance("SHA256withRSA");
             sig2.initVerify(publicKey);                        // Verifies the signature.
             sig2.update(cipherText);
             if (sig2.verify(signature)) {
@@ -21,16 +24,17 @@ public class  DecryptRSAwithSignature {
                 // Now decrypt the message
                 try {
                     // get an RSA cipher object
-                    Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                    Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
 
                     // decrypt the ciphertext using the private key
                     System.out.println("\nStart decryption");
-                    cipher.init(Cipher.DECRYPT_MODE, privateKey);
+                    cipher.init(Cipher.DECRYPT_MODE, privateKey, new OAEPParameterSpec(
+                            "SHA-256", "MGF1", MGF1ParameterSpec.SHA256, PSource.PSpecified.DEFAULT));
                     byte[] newPlainText = cipher.doFinal(cipherText);
                     System.out.println("Finish decryption: ");
 
                     key = new SecretKeySpec(newPlainText, "AES");
-                } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+                } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
                     e.printStackTrace();
                 }
             } else System.out.println("Signature failed");
